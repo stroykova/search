@@ -173,18 +173,22 @@ def get_query_result(query, index, paragraphs_count):
 def main():
     args_count = len(sys.argv)
 
-    if args_count < 3:
+    if args_count < 4:
         print "First command line argument must be input file name"
         print "Second command line argument must be output file name" 
+        print "Third command line argument must be synonims file name" 
         return 0;
 
     in_file_name = sys.argv[1]
     out_file_name = sys.argv[2]
+    syn_file_name = sys.argv[3]
 
     print "Input file name: " + in_file_name;
     print "Output file name: " + out_file_name;
     
     #--------------------------------------------------------------------------------------------
+    
+    print "Getting words..."
     
     f = open(in_file_name, 'r')
     file_text = f.read()
@@ -219,6 +223,8 @@ def main():
     print average_len(words_set)
     print ""
     
+    print "Building index..."
+    
     words = list(set(words));
     words.sort(key=lambda tup: (tup[0], tup[1])) 
     
@@ -248,6 +254,8 @@ def main():
         length += len(k)
     length = length / len(index)
         
+    print "Writing index to file..."    
+    
     f = open(out_file_name, 'w')
     for k, v in index.items():
         f.write(k.encode("utf8") + "  " + str(v[0]) + "\n");
@@ -268,6 +276,42 @@ def main():
     print "Average transformed word length (stemming):" 
     print length
     print ""
+    
+    print "Reading synonims..."
+    
+    synonims = dict()
+    f = open(syn_file_name, 'r')
+    file_text = f.read().decode("utf8")
+    f.close
+    lines = file_text.split('\n')
+    for line in lines:
+        parts = line.split('|')
+        if len(parts) < 2:
+            continue
+        
+        key = stemmer.stemWord(parts[0])
+        syns = set()
+        tokens = parts[1].split(',')
+        for token in tokens:
+            if pattern.match(token):
+                syns.add(stemmer.stemWord(token.lower()))
+        
+        if not syns:
+            continue
+        
+        if key in synonims:
+            synonims[key] |= syns
+        else:
+            synonims[key] = syns
+    
+    #print "Writing synonims to file..."
+    #f = open("syns", 'w')
+    #for k, v in synonims.items():
+    #    f.write(k + "\n");
+    #    for par in v:
+    #        f.write(par + "  ")
+    #    f.write("\n")    
+    #f.close
     
     while 1:
         query = raw_input("Input your query or press enter to quit: ").decode("utf8")
@@ -307,9 +351,20 @@ def main():
         
         query = query.split()
         
+        syns = set()
+        
         for i, val in enumerate(query):
-            if not is_operation(val) and val != '(' and val != ')':
+            if not is_operation(val) and val != '(' and val != ')': 
                 query[i] = stemmer.stemWord(val)
+                if query[i] in synonims:
+                    syns |= synonims[query[i]]
+             
+        print "Found " + str(len(syns)) + " synonims"
+             
+        if syns:
+            for syn in syns:
+                query.append("OR")
+                query.append(syn)
              
         query = convert_to_postfix(query)
         if not query:
