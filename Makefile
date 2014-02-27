@@ -1,13 +1,13 @@
 CC=g++
-CFLAGS= -Wall -Werror 
+CFLAGS= -Wall -Werror -Wfatal-errors
 
 all: index
 
-index: index.cpp
-	$(CC) $(CFLAGS) index.cpp -o index.o
+index: index.cpp 
+	$(CC) $(CFLAGS) index.cpp -o index.o 
 	
 run:
-	./index.o karenina.html karenina.html_index
+	./index.o karenina_utf.html karenina.html_index query.html
 
 test_memory:
 	valgrind ./index.o karenina.html karenina.html_index
