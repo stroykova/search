@@ -4,29 +4,38 @@ email: k.a.stroykova@gmail.com
 ТРЕБОВАНИЯ
 
 Программа запускалась на Debian Lenny.
-Для вывода кириллицы в терминале использовалась кодировка Cyrillic (KOI8-R).
-Перевод строк в нижний регистр, а так же ввод из терминала работает только с использованием "ru_RU.koi8r"
-Для компиляции использовался gcc version 4.7.2 (Debian 4.7.2-5)
+Для вывода кириллицы в терминале использовалась кодировка UTF-8.
+Для выполнения использовался Python 2.7.3
+Для корректной работы программы входной файл karenina_utf.html был преобразован в UTF-8 с помощью iconv
 
 ЗАПУСК
 
 Для запуска выполнить:
 
-make
 make run
 
 Для уточнения имени входного файла для построения индекса и имени выходного файла выполнить:
 make
-./index.o имя_входного_файла имя_выходного_файла
+python script.py karenina_utf.html karenina.html_index
 
 РЕЗУЛЬТАТЫ
 
-Total words count (with repetitions): 289939 words - все слова, найденные в документе
-Average word length (with repetitions): 4.87638 characters - средняя длина слова по всем словам документа
-Total words count (with no repetitions): 35597 words - все слова, найденные в документе, без учета повторений
-Average word length (with no repetitions): 8.04641 characters - средняя длина слова без учета повторений
-Transformed words count (with no repetitions): 33583 - все слова, найденные в документе и преобразованные к нижнему регистру, без учета повторений
-Average transformed word length (with no repetitions): 8.13412 characters - средняя длина преобразованного слова
+Лабораторная 1
+
+Total words count (with duplicates):
+268886 - все слова, найденные в документе
+Average word length (with duplicates): 
+4.9874593694 - средняя длина слова по всем словам документа
+
+Total words count (no duplicates):
+35506 - все слова, найденные в документе, без учета повторений
+Average word length (no duplicates):
+8.12555624402 - средняя длина слова без учета повторений
+
+Transformed words count (no duplicates):
+33537 - все слова, найденные в документе и преобразованные к нижнему регистру, без учета повторений
+Average transformed word length (no duplicates):
+8.21379372037 - средняя длина преобразованного слова
 
 Пример содержимого индекса:
 привычных 1 - слово и его частота
@@ -40,4 +49,20 @@ Average transformed word length (with no repetitions): 8.13412 characters - ср
 приза 1
 6313 
 
+Лабораторная 2
+
 Запрос для булева поиска работает с операциями AND, OR, NOT, а так же с изменениями приоритетов с помощью круглых скобок.
+
+Лабораторная 3
+
+Для стемминга использовалась библиотека PyStemmer
+
+Для установки выполнить:
+
+sudo apt-get install python
+sudo apt-get install python-dev
+wget -r http://snowball.tartarus.org/wrappers/PyStemmer-1.0.1.tar.gz
+rm -rf PyStemmer-1.0.1
+tar -xvf PyStemmer-1.0.1.tar.gz
+cd PyStemmer-1.0.1
+sudo python setup.py install
