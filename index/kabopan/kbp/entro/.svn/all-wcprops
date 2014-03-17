@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 32
+/svn/!svn/ver/89/trunk/kbp/entro
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/83/trunk/kbp/entro/__init__.py
+END
+huffman.py
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/89/trunk/kbp/entro/huffman.py
+END
+_encoding.py
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/89/trunk/kbp/entro/_encoding.py
+END
+sfc.py
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/!svn/ver/87/trunk/kbp/entro/sfc.py
+END
+range.py
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/89/trunk/kbp/entro/range.py
+END

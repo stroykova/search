@@ -1,0 +1,21 @@
+TODOs:
+kbp* cleaning, merging under a parent class
+turn hash into __init__
+_misc.py : a lot of cleaning
+kbpack
+kbpcrypt
+rewrite headers
+check epydoc output
+standardize test_vectors for hashes
+create test class, use unittest
+create a pickle class
+class-ify entro, transform,...
+
+Bugs:
+ascii85
+jcalg compression
+tiger constants
+
+missing:
+md2 constant implementation
+ripemd

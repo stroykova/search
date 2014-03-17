@@ -1,0 +1,12 @@
+K 10
+svn:ignore
+V 68
+*.html
+*.gif
+*.png
+epydoc.css
+epydoc.js
+profile.out
+api-objects.txt
+
+END
