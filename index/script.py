@@ -192,7 +192,7 @@ def compressed_index_to_file_elias_gamma(index, out_file_name):
         entries = ""
         for i in v[1]:
             entries += elias.gamma_encode(i)
-        if len(entries) % 32 != 0 :
+        if len(entries) % 32 != 0:
             zeroes = 32 - len(entries) % 32
             for i in range(zeroes):
                 entries += "0"
@@ -218,9 +218,6 @@ def read_compressed_index_from_file_elias_gamma(out_file_name):
 
     file_name = out_file_name + "_elias_gamma"
     f = open(file_name, 'rb')
-
-    import os
-    b = os.path.getsize(file_name)
 
     word_len_bytes = f.read(4)
     idx1 = 0
@@ -262,29 +259,90 @@ def read_compressed_index_from_file_elias_gamma(out_file_name):
     return index
 
 
+def compressed_index_to_file_fibonacci(index, out_file_name):
+
+    print "Compressing with fibonacci..."
+    from kbp.univ import fibonacci
+    import struct
+    file_name = out_file_name + "_fibonacci"
+    f = open(file_name, 'wb')
+    for k, v in index.items():
+        word_len = len(k.encode("utf-8"))
+        f.write(struct.pack('I', word_len))
+        f.write(k.encode("utf-8"))
+        f.write(struct.pack('I', v[0]))
+
+        entries = ""
+        for i in v[1]:
+            entries += fibonacci.encode(i)
+        if len(entries) % 32 != 0:
+            zeroes = 32 - len(entries) % 32
+            for i in range(zeroes):
+                entries += "0"
+        numbers = []
+        count = len(entries) / 32
+
+        for idx in range(0, count):
+            numbers.append(int(entries[idx * 32: (idx + 1) * 32], 2))
+
+        f.write(struct.pack('I', count))
+        for number in numbers:
+            f.write(struct.pack('I', number))
+    f.close()
+    return
+
+
+def read_compressed_index_from_file_fibonacci(out_file_name):
+    print "Reading compressed index with elias gamma..."
+    from kbp.univ import fibonacci
+    import struct
+    index = dict()
+
+    file_name = out_file_name + "_fibonacci"
+    f = open(file_name, 'rb')
+
+    word_len_bytes = f.read(4)
+    idx1 = 0
+    while word_len_bytes:
+        word_len = struct.unpack('I', word_len_bytes)[0]
+        word = f.read(word_len).decode("utf8")
+        freq_bytes = f.read(4)
+
+        freq = struct.unpack('I', freq_bytes)[0]
+        arr_len_bytes = f.read(4)
+        arr_len = struct.unpack('I', arr_len_bytes)[0]
+        arr = ""
+        for i in range(0, arr_len):
+            string = f.read(4)
+
+            number = struct.unpack('I', string)[0]
+
+            formated = "{0:b}".format(number)
+            if len(formated) % 32 != 0:
+                zeroes = 32 - len(formated) % 32
+                for i in range(zeroes):
+                    formated = "0" + formated
+            arr += formated
+        array = list()
+        idx = 0
+        while len(arr) > 0 and "11" in arr:
+            var = fibonacci.decode(arr)
+            idx += 1
+
+            if var != 0:
+                array.append(var)
+            arr = arr[arr.index("11") + 2:]
+
+        index[word] = freq, array
+        word_len_bytes = f.read(4)
+        idx1 += 1
+
+    f.close()
+    return index
+
+
+
 def main():
-    # from kbp.univ import elias
-
-
-    # print elias.gamma_encode(1)
-    # print elias.gamma_encode(3)
-    # print elias.gamma_encode(2)
-    # print elias.gamma_encode(5)
-    #
-    # str1 = '101001100101'
-    # while (len(str1) > 0):
-    #     var = elias.gamma_decode(str1)
-    #     print var[0]
-    #     str1 = str1[var[1]:]
-    #
-    # print ""
-    #
-    # bin_text = ''.join('{:08b}'.format(ord(c)) for c in 'привет')
-    # print bin_text
-    # print len(bin_text) / 8
-    # print ''.join(chr(int(bin_text[i:i + 8], 2)) for i in xrange(0, len(bin_text), 8))
-    #
-    # return
 
     args_count = len(sys.argv)
 
@@ -300,27 +358,6 @@ def main():
 
     print "Input file name: " + in_file_name
     print "Output file name: " + out_file_name
-
-    #--------------------------------------------------------------------------------------------
-
-    # index = dict()
-    # index["мамочка"] = 6, [1, 2, 3, 4, 5]
-    # index["солнце"] = 1, [1]
-    # index["стелен"] = 1, [7490]
-    # index["облак"] = 4, [7490, 237, 73,4]
-    # compressed_index_to_file_elias_gamma(index, out_file_name)
-    # index = read_compressed_index_from_file_elias_gamma(out_file_name)
-    #
-    # f = open(out_file_name, 'w')
-    # for k, v in index.items():
-    #     f.write(k + "  " + str(v[0]) + "\n")
-    #     for par in v[1]:
-    #         f.write(str(par) + "  ")
-    #     f.write("\n")
-    #
-    # f.close()
-    #
-    # return
 
     print "Getting words..."
 
@@ -398,11 +435,13 @@ def main():
             v[1][idx] -= prev1
             prev1 = prev2
 
-    #закодировать индекс двумя способами и записать в файл
     print "Writing index to file..."
 
     compressed_index_to_file_elias_gamma(index, out_file_name)
     index = read_compressed_index_from_file_elias_gamma(out_file_name)
+
+    compressed_index_to_file_fibonacci(index, out_file_name)
+    index = read_compressed_index_from_file_fibonacci(out_file_name)
 
     #prepare for work
     for k, v in index.items():
