@@ -181,39 +181,31 @@ def compressed_index_to_file_elias_gamma(index, out_file_name):
     print "Compressing with elias gamma..."
     from kbp.univ import elias
     import struct
-    previous_percentage = -1
-    idx = 0
     file_name = out_file_name + "_elias_gamma"
     f = open(file_name, 'wb')
     for k, v in index.items():
-        # bin_text = ''.join('{:08b}'.format(ord(c)) for c in k)
-        # word_len = len(bin_text)
         word_len = len(k.encode("utf-8"))
-        #длина слова
-        # print k, word_len
-        f.write(struct.pack('i', word_len))
-        #слово
-        #f.write(bin_text)
+        f.write(struct.pack('I', word_len))
         f.write(k.encode("utf-8"))
-        #частота
-        f.write(struct.pack('i', v[0]))
+        f.write(struct.pack('I', v[0]))
 
         entries = ""
         for i in v[1]:
             entries += elias.gamma_encode(i)
-        # zeroes = 8 - len(entries) % 8
-        # for i in range(zeroes):
-        #     entries += "0"
+        if len(entries) % 32 != 0 :
+            zeroes = 32 - len(entries) % 32
+            for i in range(zeroes):
+                entries += "0"
 
-        #длина массива вхождений
-        f.write(struct.pack('i', len(entries)))
-        #вхождения
-        f.write(entries)
-        percentage = 100 * idx / len(index)
-        if percentage != previous_percentage:
-            print "Compressing with elias gamma: " + str(percentage) + "% done"
-            previous_percentage = percentage
-        idx += 1
+        numbers = []
+        count = len(entries) / 32
+
+        for idx in range(0, count):
+            numbers.append(int(entries[idx * 32: (idx + 1) * 32], 2))
+
+        f.write(struct.pack('I', count))
+        for number in numbers:
+            f.write(struct.pack('I', number))
     f.close()
     return
 
@@ -222,7 +214,6 @@ def read_compressed_index_from_file_elias_gamma(out_file_name):
     print "Reading compressed index with elias gamma..."
     from kbp.univ import elias
     import struct
-    previous_percentage = -1
     index = dict()
 
     file_name = out_file_name + "_elias_gamma"
@@ -233,46 +224,38 @@ def read_compressed_index_from_file_elias_gamma(out_file_name):
 
     word_len_bytes = f.read(4)
     idx1 = 0
-    import binascii
     while word_len_bytes:
-        word_len = struct.unpack('i', word_len_bytes)[0]
-        # print word_len
+        word_len = struct.unpack('I', word_len_bytes)[0]
         word = f.read(word_len).decode("utf8")
-        # print word.decode("utf-8")
-        # key = ''.join(chr(int(word[i:i + 8], 2)) for i in xrange(0, len(word), 8))
-        # print word
-        # print(key.decode('UTF-16'))
         freq_bytes = f.read(4)
 
-        freq = struct.unpack('i', freq_bytes)[0]
-        #print(freq)
+        freq = struct.unpack('I', freq_bytes)[0]
         arr_len_bytes = f.read(4)
-        arr_len = struct.unpack('i', arr_len_bytes)[0]
-        #print arr_len
-        arr = f.read(arr_len)
+        arr_len = struct.unpack('I', arr_len_bytes)[0]
+        arr = ""
+        for i in range(0, arr_len):
+            string = f.read(4)
+
+            number = struct.unpack('I', string)[0]
+
+            formated = "{0:b}".format(number)
+            if len(formated) % 32 != 0:
+                zeroes = 32 - len(formated) % 32
+                for i in range(zeroes):
+                    formated = "0" + formated
+            arr += formated
         array = list()
         idx = 0
-        # print "here"
-        # print len(arr)
         while len(arr) > 0 and "1" in arr:
             var = elias.gamma_decode(arr)
             idx += 1
-         #   print var
 
             if var[0] != 0:
                 array.append(var[0])
-            #print var[1]
-            #print arr
             arr = arr[var[1]:]
 
         index[word] = freq, array
         word_len_bytes = f.read(4)
-        idx = f.tell()
-        percentage = 100 * idx / b
-        if percentage != previous_percentage:
-            print "Reading compressed index with elias gamma: " + str(percentage) + "% done"
-            previous_percentage = percentage
-
         idx1 += 1
 
     f.close()
