@@ -164,6 +164,15 @@ def main():
         length += len(k)
     length /= len(index)
 
+    f = open(out_file_name, 'w')
+    for k, v in index.items():
+        f.write(k.encode("utf8") + "  " + str(v[0]) + "\n")
+        for par in v[1]:
+            f.write(str(par) + "  ")
+        f.write("\n")
+
+    f.close()
+
     # prepare for compressing
     for k, v in index.items():
         prev1 = v[1][0]
