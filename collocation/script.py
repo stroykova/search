@@ -1,22 +1,24 @@
 # -*- coding: utf-8 -*-
 import sys
 import re
-#from pymorphy import get_morph
+from pymorphy import get_morph
 import operator
 #import itertools
 import math
 
 
-def get_words(in_file_name, index):
-    print "Getting words from " + in_file_name + "..."
-    f = open(in_file_name, 'r')
-    file_text = f.read()
-    f.close()
+def get_words(file_name, index):
+    
+    morph = get_morph('')
+    print "Getting words from " + file_name + "..."
 
     words = []
-    index.clear()
     pattern = re.compile("(([\w]+[-'])*[\w']+'?)", re.U)
 
+    # try:
+    f = open(file_name, 'r')
+    file_text = f.read()
+    f.close()
     file_text = unicode(file_text, 'utf8').upper()
     file_text = file_text.replace('--', ' -- ')
     tokens = file_text.split()
@@ -25,68 +27,25 @@ def get_words(in_file_name, index):
         m = pattern.match(token)
         if m:
             word = m.group()
-            words.append(word)
-            if word in index:
-                index[word] += 1
+	    info = morph.get_graminfo(word)
+	    if len(info) < 2:
+		continue
+	    if not info[0]['class'] in [u"П", u"С", u"Г"]:
+		continue
+	    norm = info[0]['norm']
+            words.append(norm)
+            if norm in index:
+                index[norm] += 1
             else:
-                index[word] = 1
+                index[norm] = 1
         percentage = 100 * idx / len(tokens)
         if percentage != previous_percentage and percentage % 5 == 0:
             print "Getting words: " + str(percentage) + "% done"
             previous_percentage = percentage
+    # except:
+    #     print "error occured"
 
     return words
-
-
-# def get_words_nva(words):
-#
-#     print "Getting N, V, A from words..."
-#     words_nva = []
-#     morph = get_morph('')
-#     previous_percentage = -1
-#     for idx, word in enumerate(words):
-#         info = morph.get_graminfo(word)
-#         if len(info) < 1:
-#             continue
-#         if info[0]['class'] == u"С" or info[0]['class'] == u"П" or info[0]['class'] == u"Г":
-#             #words.append(next(iter(morph.normalize(word))))
-#             words_nva.append(word)
-#         percentage = 100 * idx / len(words)
-#         if percentage != previous_percentage and percentage % 5 == 0:
-#             print "Getting N, V, A: " + str(percentage) + "% done"
-#             previous_percentage = percentage
-#     return words_nva
-
-
-# def get_bigrams(words):
-#     bigrams = []
-#     for i in range(len(words) - 1):
-#         t = words[i], words[i+1]
-#         bigrams.append(t)
-#     return bigrams
-
-
-# def bigrams_frequency(text_words, out_file_name):
-#
-#     print "Calculating bigrams by frequency..."
-#     words = get_words_nva(text_words)
-#
-#     bigrams = get_bigrams(words)
-#     bigrams_index = dict()
-#     for bigram in bigrams:
-#         if bigram in bigrams_index:
-#             bigrams_index[bigram] += 1
-#         else:
-#             bigrams_index[bigram] = 1
-#
-#     sorted_bigrams = reversed(sorted(bigrams_index.iteritems(), key=operator.itemgetter(1)))
-#
-#     f = open(out_file_name, 'w')
-#     for bigram in sorted_bigrams:
-#         f.write(bigram[0][0].encode("utf-8") + " " + bigram[0][1].encode("utf-8") + " " + str(bigram[1]))
-#         f.write("\n")
-#     f.close()
-#     return sorted_bigrams
 
 
 class Bigram:
@@ -94,9 +53,8 @@ class Bigram:
         self.bigram = None
 
 
-def bigrams_mean(text_words, out_file_name, window_size):
+def bigrams_mean(bigrams_index, text_words, window_size):
     print "Calculating bigrams by mean..."
-    bigrams_index = dict()
     words_count = len(text_words)
     if words_count < window_size:
         return bigrams_index
@@ -133,24 +91,7 @@ def bigrams_mean(text_words, out_file_name, window_size):
         else:
             v.s = -1
 
-    sorted_bigrams = list(reversed(sorted(bigrams_index.values(), key=operator.attrgetter('n'))))
-
-    f = open(out_file_name, 'w')
-    for b in sorted_bigrams:
-        f.write(b.bigram[0].encode("utf-8") + " " + b.bigram[1].encode("utf-8") + "\n")
-        f.write(str(b.n))
-        f.write("\n")
-        for length in b.lengths:
-            f.write(str(length) + " ")
-        f.write("\n")
-        f.write(str(b.d))
-        f.write("\n")
-        f.write(str(b.s))
-        f.write("\n")
-
-    f.close()
-
-    return sorted_bigrams
+    return
 
 
 def t(sorted_bigrams, index, out_file_name):
@@ -225,10 +166,6 @@ def hi2(sorted_bigrams, index, out_file_name):
         O21 = len(bigrams_index[b0][0] - bigrams_index[b1][1])
         O12 = len(bigrams_index[b1][1] - bigrams_index[b0][2])
 
-        # O22 = sum(bg.bigram[0] != b0 and bg.bigram[1] != b1 for bg in sorted_bigrams)
-        # O12 = sum(bg.bigram[0] != b0 and bg.bigram[1] == b1 for bg in sorted_bigrams)
-        # O21 = sum(bg.bigram[0] == b0 and bg.bigram[1] != b1 for bg in sorted_bigrams)
-
         summa = float((O11 + O12) * (O11 + O21) * (O12 + O22) * (O21 + O22))
         hi2 = words_count * (O11 * O22 - O12 * O21) ** 2 / summa
 
@@ -253,25 +190,46 @@ def hi2(sorted_bigrams, index, out_file_name):
 def main():
 
     args_count = len(sys.argv)
-    if args_count < 3:
-        print "First command line argument must be input file name"
-        print "Second command line argument must be output file name"
+    if args_count < 2:
+        print "First command line argument must be directory with input files"
         return 0
 
-    in_file_name = sys.argv[1]
-    print "Input file name: " + in_file_name
+    in_dir = sys.argv[1]
+    print "Input dir: " + in_dir
 
     index = dict()
-    text_words = get_words(in_file_name, index)
-    f = open("words", 'w')
-    for word in text_words:
-        f.write(word.encode("utf-8")+"\n")
-    f.close()
-
     window_size = 5
+    bigrams_index = dict()
 
-    #sorted_bigrams_simple = bigrams_frequency(text_words, "bigrams_freq")
-    sorted_bigrams = bigrams_mean(text_words, "bigrams_mean", window_size)
+    import os
+    files = os.listdir(in_dir)
+    for idx, file_name in enumerate(files):
+	print idx, "/", len(files)
+        text_words = get_words(in_dir + '/' + file_name, index)
+
+        f = open("words", 'a')
+        for word in text_words:
+            f.write(word.encode("utf-8")+"\n")
+        f.close()
+	print "Got words: ", len(text_words)
+        bigrams_mean(bigrams_index, text_words, window_size)
+
+    sorted_bigrams = list(reversed(sorted(bigrams_index.values(), key=operator.attrgetter('n'))))
+
+    f = open("bigrams_mean", 'w')
+    for b in sorted_bigrams:
+        f.write(b.bigram[0].encode("utf-8") + " " + b.bigram[1].encode("utf-8") + "\n")
+        f.write(str(b.n))
+        f.write("\n")
+        for length in b.lengths:
+            f.write(str(length) + " ")
+        f.write("\n")
+        f.write(str(b.d))
+        f.write("\n")
+        f.write(str(b.s))
+        f.write("\n")
+
+    f.close()
 
     t_collocations = t(sorted_bigrams, index, "collocations_t")
     hi2_collocations = hi2(sorted_bigrams, index, "collocations_hi2")

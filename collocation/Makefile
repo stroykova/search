@@ -1,5 +1,5 @@
 run:
-	python script.py karenina_utf.html bigramms
+	python script.py docs3 bigramms
 
 run1:
 	python script.py karenina1_utf_small bigramms
